@@ -1,0 +1,12 @@
+{
+    "record":{
+        "data_path":"../data",
+        "video_encoder_prop":"H264_HIGH",
+        "frame_rate":30,
+        "color_cam":true,
+        "mono1":true,
+        "mono2":true
+    },
+    
+
+}
