@@ -7,6 +7,11 @@
         "mono1":true,
         "mono2":true
     },
+    "camera_config":{
+        "cam2":true,
+        "cam1_mx_id":"",
+        "cam2_mx_id":""
+    }
     
 
 }
