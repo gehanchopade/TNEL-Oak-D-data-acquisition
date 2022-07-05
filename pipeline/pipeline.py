@@ -9,49 +9,47 @@ except:
 
 class Pipeline():
     def __init__(self):
-        self.config_record=getConfigData().get_record_config()
-        print(self.config_record)
-    def setup_pipeline(self):
+        self.config=getConfigData("./config.json").get_record_config()
+    def getPipeLine(self,streamName):
         pipeline = dai.Pipeline()
+
         # Define sources and outputs
-        camRgb = pipeline.create(dai.node.ColorCamera)
-        monoLeft = pipeline.create(dai.node.MonoCamera)
-        monoRight = pipeline.create(dai.node.MonoCamera)
-        ve1 = pipeline.create(dai.node.VideoEncoder)
-        ve2 = pipeline.create(dai.node.VideoEncoder)
-        ve3 = pipeline.create(dai.node.VideoEncoder)
+        if(self.config['color_cam']):
+            camRgb = pipeline.create(dai.node.ColorCamera)
+            ve_color = pipeline.create(dai.node.VideoEncoder)
+            ve_color_Out = pipeline.create(dai.node.XLinkOut)
+            ve_color_Out.setStreamName(streamName[0])
+            camRgb.setBoardSocket(dai.CameraBoardSocket.RGB)
+            if(self.config['fps']>60):
+                color_fps=60
+            else:
+                color_fps=self.config['fps']
+            ve_color.setDefaultProfilePreset(color_fps, dai.VideoEncoderProperties.Profile.H264_HIGH)
+            camRgb.video.link(ve_color.input)
+            ve_color.bitstream.link(ve_color_Out.input)
 
-        ve1Out = pipeline.create(dai.node.XLinkOut)
-        ve2Out = pipeline.create(dai.node.XLinkOut)
-        ve3Out = pipeline.create(dai.node.XLinkOut)
+        if(self.config['mono1']):
+            monoLeft = pipeline.create(dai.node.MonoCamera)
+            ve_mono_left = pipeline.create(dai.node.VideoEncoder)
+            ve_mono_left_Out = pipeline.create(dai.node.XLinkOut)
+            ve_mono_left_Out.setStreamName(streamName[1])
+            monoLeft.setBoardSocket(dai.CameraBoardSocket.LEFT)
+            ve_mono_left.setDefaultProfilePreset(self.config['fps'], dai.VideoEncoderProperties.Profile.H264_HIGH)
+            monoLeft.out.link(ve_mono_left.input)
+            ve_mono_left.bitstream.link(ve_mono_left_Out.input)
 
-        ve1Out.setStreamName('ve1Out')
-        ve2Out.setStreamName('ve2Out')
-        ve3Out.setStreamName('ve3Out')
-
-        # Properties
-        camRgb.setBoardSocket(dai.CameraBoardSocket.RGB)
-        monoLeft.setBoardSocket(dai.CameraBoardSocket.LEFT)
-        monoRight.setBoardSocket(dai.CameraBoardSocket.RIGHT)
-
-        video_enc_props={'H264_HIGH':dai.VideoEncoderProperties.Profile.H264_HIGH,
-                         'H264_BASELINE':dai.VideoEncoderProperties.Profile.H264_BASELINE,
-                         'H264_MAIN':dai.VideoEncoderProperties.Profile.H264_MAIN,
-                         'MJPEG':dai.VideoEncoderProperties.Profile.MJPEG}
-        # Create encoders, one for each camera, consuming the frames and encoding them using H.264 / H.265 encoding
-        ve1.setDefaultProfilePreset(self.config_record['frame_rate'], video_enc_props[self.config_record['video_encoder_prop']])
-        ve2.setDefaultProfilePreset(self.config_record['frame_rate'], video_enc_props[self.config_record['video_encoder_prop']])
-        ve3.setDefaultProfilePreset(self.config_record['frame_rate'], video_enc_props[self.config_record['video_encoder_prop']])
-
-        # Linking
-        monoLeft.out.link(ve1.input)
-        camRgb.video.link(ve2.input)
-        monoRight.out.link(ve3.input)
-        ve1.bitstream.link(ve1Out.input)
-        ve2.bitstream.link(ve2Out.input)
-        ve3.bitstream.link(ve3Out.input)
+        if(self.config['mono2']):
+            monoRight = pipeline.create(dai.node.MonoCamera)    
+            ve_mono_right = pipeline.create(dai.node.VideoEncoder)
+            ve_mono_right_Out = pipeline.create(dai.node.XLinkOut)
+            ve_mono_right_Out.setStreamName(streamName[2])
+            monoRight.setBoardSocket(dai.CameraBoardSocket.RIGHT)
+            ve_mono_right.setDefaultProfilePreset(self.config['fps'], dai.VideoEncoderProperties.Profile.H264_HIGH)
+            monoRight.out.link(ve_mono_right.input)
+            ve_mono_right.bitstream.link(ve_mono_right_Out.input)
 
         return pipeline
+
 
 # if __name__=="__main__":
 #     pipeline=Pipeline()
