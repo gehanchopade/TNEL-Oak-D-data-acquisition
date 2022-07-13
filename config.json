@@ -6,6 +6,8 @@
         "color_cam": false,
         "mono1": true,
         "mono2": true,
-        "time_limit": 10
+        "time_limit": 60,
+        "trial_interval": 600,
+        "audio_path": "./audio-data/"
     }
 }

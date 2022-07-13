@@ -4,12 +4,11 @@ from pipeline.pipeline import Pipeline
 import os
 import time
 import sys
-
-try:
-    import depthai as dai
-except:
-    print("Run \"python3 install_requirements.py\" to install dependencies or follow README for setup instructions")
-    sys.exit(42)
+from playsound import playsound
+import json
+import random
+from os import listdir
+import pygame
 
 try:
     import depthai as dai
@@ -20,7 +19,7 @@ except:
 
 def getPipeLine(streamName):
     pipeline = dai.Pipeline()
-
+    config=getConfigData("config.json").get_record_config()
     # Define sources and outputs
     # camRgb = pipeline.create(dai.node.ColorCamera)
     monoLeft = pipeline.create(dai.node.MonoCamera)
@@ -43,8 +42,8 @@ def getPipeLine(streamName):
     monoRight.setBoardSocket(dai.CameraBoardSocket.RIGHT)
     # Create encoders, one for each camera, consuming the frames and encoding them using H.264 / H.265 encoding
     # ve1.setDefaultProfilePreset(30, dai.VideoEncoderProperties.Profile.H264_HIGH)
-    ve2.setDefaultProfilePreset(30, dai.VideoEncoderProperties.Profile.H264_HIGH)
-    ve3.setDefaultProfilePreset(30, dai.VideoEncoderProperties.Profile.H264_HIGH)
+    ve2.setDefaultProfilePreset(config['fps'], dai.VideoEncoderProperties.Profile.H264_HIGH)
+    ve3.setDefaultProfilePreset(config['fps'], dai.VideoEncoderProperties.Profile.H264_HIGH)
 
     # Linking
     monoLeft.out.link(ve2.input)
@@ -57,69 +56,114 @@ def getPipeLine(streamName):
 
 @ray.remote
 def recordCam(mxID,path,streamName,camName,time_limit):
-    pipeline=getPipeLine(streamName)
-    isDev1,deviceInfo=dai.Device.getDeviceByMxId(mxID)
-    with dai.Device(pipeline,deviceInfo) as dev:
+    # pipeline=getPipeLine(streamName)
+    # isDev1,deviceInfo=dai.Device.getDeviceByMxId(mxID)
+    # with dai.Device(pipeline,deviceInfo) as dev:
 
         # Output queues will be used to get the encoded data from the outputs defined above
-        outQ1 = dev.getOutputQueue(name=streamName[1], maxSize=30, blocking=False)
-        # outQ2 = dev.getOutputQueue(name=streamName[1], maxSize=30, blocking=False)
-        outQ3 = dev.getOutputQueue(name=streamName[2], maxSize=30, blocking=False)
-        os.mkdir(path+'/'+camName)
-        os.mkdir(path+'/'+camName+'/videos/')
-        os.mkdir(path+'/'+camName+'/frames/')
-        name=path+'/'+camName+'/videos/record'
-        f_mono1=name+'_mono1.h264'
-        f_mono2=name+'_mono2.h264'
-        f_color=name+'_color.h264'
-        start=time.time()
-        print("RECORDING for"+ camName + " started at "+str(int(time.time())) + " seconds.")
-        with open(f_mono1, 'wb') as fileMono1H264, open(f_color, 'wb') as fileColorH265, open(f_mono2, 'wb') as fileMono2H264:
-#             print("Press Ctrl+C or interrupt kernel to stop encoding...")
+        # outQ1 = dev.getOutputQueue(name=streamName[1], maxSize=30, blocking=False)
+        # # outQ2 = dev.getOutputQueue(name=streamName[1], maxSize=30, blocking=False)
+        # outQ3 = dev.getOutputQueue(name=streamName[2], maxSize=30, blocking=False)
+    os.mkdir(path+'/'+camName)
+    os.mkdir(path+'/'+camName+'/videos/')
+    os.mkdir(path+'/'+camName+'/frames/')
+    name=path+'/'+camName+'/videos/record'
+    f_mono1=name+'_mono1.h264'
+    f_mono2=name+'_mono2.h264'
+    f_color=name+'_color.h264'
+    start=time.time()
+    print("RECORDING for"+ camName + " started at "+str(int(time.time())) + " seconds.")
+#         with open(f_mono1, 'wb') as fileMono1H264, open(f_color, 'wb') as fileColorH265, open(f_mono2, 'wb') as fileMono2H264:
+# #             print("Press Ctrl+C or interrupt kernel to stop encoding...")
             
-            while (time.time()-start<time_limit+2):
-#                 print(time.time()-start)
-                try:
-                    # Empty each queue
-                    while outQ1.has():
-#                         print("11"+str(outQ1.has()))
-                        outQ1.get().getData().tofile(fileMono1H264)
+#             while (time.time()-start<time_limit+2):
+# #                 print(time.time()-start)
+#                 try:
+#                     # Empty each queue
+#                     while outQ1.has():
+# #                         print("11"+str(outQ1.has()))
+#                         outQ1.get().getData().tofile(fileMono1H264)
 
-#                     while outQ2.has():
-# #                         print("21"+str(outQ2.has()))
-#                         outQ2.get().getData().tofile(fileColorH265)
+# #                     while outQ2.has():
+# # #                         print("21"+str(outQ2.has()))
+# #                         outQ2.get().getData().tofile(fileColorH265)
 
-                    while outQ3.has():
-#                         print("31"+str(outQ3.has()))
-                        outQ3.get().getData().tofile(fileMono2H264)
+#                     while outQ3.has():
+# #                         print("31"+str(outQ3.has()))
+#                         outQ3.get().getData().tofile(fileMono2H264)
     
-                except KeyboardInterrupt:
-                    # Keyboard interrupt (Ctrl + C) detected
-                    break
-        print("Converting to mp4...")
-        cmd = "ffmpeg -framerate 30 -i {} -c copy {}"
+#                 except KeyboardInterrupt:
+#                     # Keyboard interrupt (Ctrl + C) detected
+#                     break
+#         print("Converting to mp4...")
+#         cmd = "ffmpeg -framerate 30 -i {} -c copy {}"
 
-        os.system(cmd.format(f_mono1,name+'_mono1.mp4'))
-        os.system(cmd.format(f_mono2, name+'_mono2.mp4'))
-        os.system(cmd.format(f_color, name+"_color.mp4"))
-        time.sleep(5)
-        print("Conversion complete. Removing temporary files")
+#         os.system(cmd.format(f_mono1,name+'_mono1.mp4'))
+#         os.system(cmd.format(f_mono2, name+'_mono2.mp4'))
+#         os.system(cmd.format(f_color, name+"_color.mp4"))
+#         time.sleep(5)
+#         print("Conversion complete. Removing temporary files")
 
-        os.remove(f_mono1)
-        os.remove(f_mono2)
-        os.remove(f_color)
+#         os.remove(f_mono1)
+#         os.remove(f_mono2)
+#         os.remove(f_color)
         
-        print("RECORDING for "+ camName + " ended at "+str(int(time.time())) + " seconds.")
-if __name__=="__main__":
-    streamName1=['ve1Out','ve2Out','ve3Out']
-    streamName2=['ve1Out1','ve2Out1','ve3Out1']
-    config=getConfigData("config.json").get_record_config()
+    print("RECORDING for "+ camName + " ended at "+str(int(time.time())) + " seconds.")
+
+def recordVideo(path,streamName1,streamName2,config,currentRun):
     ray.init()
-    month,day,year=time.localtime().tm_mon,time.localtime().tm_mday,time.localtime().tm_year
-    hour,minutes,seconds=time.localtime().tm_hour,time.localtime().tm_min,time.localtime().tm_sec
-    dir_name=str(month)+'_'+str(day)+'_'+str(year)+'_'+str(hour)+str(minutes)
-    path=config['data_path']+'/'+dir_name
     os.mkdir(path)
     ray.get([recordCam.remote(mxID = '14442C10913365D300',path = path,streamName = streamName1,camName = 'cam1',time_limit = int(config['time_limit'])),
              recordCam.remote(mxID = '14442C10810665D300',path = path,streamName = streamName2,camName = 'cam2',time_limit = int(config['time_limit']))])
-    ray.shutdown()  
+    ray.shutdown()
+    currentRun['timeEnd']=time.time()
+    saveJson(currentRun,path+'/metadata.json')
+    saveJson(currentRun,'./lastRunMeta.json')
+
+def saveJson(currentRun,path):
+    jsonObj=json.dumps(currentRun)
+    with open(path,"w") as file:
+        file.write(jsonObj)
+
+def getLastRunTime(lastRun):
+    return lastRun['timeStart']
+def playAudio(audio_path):
+    pygame.mixer.init()
+    pygame.mixer.music.load(audio_path)
+    pygame.mixer.music.play()
+if __name__=="__main__":
+    
+    config=getConfigData("config.json").get_record_config()
+    audio_files_list=listdir(config['audio_path'])
+    try:
+        while True:
+            lastRunMetaPath='./lastRunMeta.json'
+            with open(lastRunMetaPath,'rb') as file:
+                lastRun=json.load(file)
+            streamName1=['ve1Out','ve2Out','ve3Out']
+            streamName2=['ve1Out1','ve2Out1','ve3Out1']
+            month,day,year=time.localtime().tm_mon,time.localtime().tm_mday,time.localtime().tm_year
+            hour,minutes,seconds=time.localtime().tm_hour,time.localtime().tm_min,time.localtime().tm_sec
+            dir_name=str(month)+'_'+str(day)+'_'+str(year)+'_'+str(hour)+str(minutes)
+            path=config['data_path']+'/'+dir_name
+            lastRunTime=getLastRunTime(lastRun)
+            randomFlag=random.randint(0,1)
+            audio_path=config['audio_path']+random.choice(audio_files_list)
+            currentRun={
+                "timeStart":time.time(),
+                "audio_path":audio_path,
+                "path":path,
+                "year":year,
+                "month":month,
+                "day":day,
+                "timeEnd":time.time()
+            }
+            if(time.time()-lastRunTime>config['trial_interval'] and randomFlag):
+                currentRun['timeStart']=time.time()
+                recordVideo(path=path,streamName1=streamName1,streamName2=streamName2,config=config,currentRun=currentRun)
+                time.sleep(5)
+                print(f'Playing Audio: {audio_path}')
+                playAudio(audio_path)
+    except KeyboardInterrupt:
+        print("Recording Stopped")
+
