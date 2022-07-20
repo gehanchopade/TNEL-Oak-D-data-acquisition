@@ -3,10 +3,10 @@
         "data_path": "./data",
         "video_encoder_prop": "H264_HIGH",
         "fps": 120,
-        "color_cam": false,
+        "color_cam": true,
         "mono1": true,
         "mono2": true,
-        "time_limit": 60,
+        "time_limit": 600,
         "trial_interval": 600,
         "audio_path": "./audio-data/"
     }

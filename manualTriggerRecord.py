@@ -17,18 +17,18 @@ def getPipeLine(streamName):
     pipeline = dai.Pipeline()
     config=getConfigData("config.json").get_record_config()
     # Define sources and outputs
-    # camRgb = pipeline.create(dai.node.ColorCamera)
+    camRgb = pipeline.create(dai.node.ColorCamera)
     monoLeft = pipeline.create(dai.node.MonoCamera)
     monoRight = pipeline.create(dai.node.MonoCamera)
-    # ve1 = pipeline.create(dai.node.VideoEncoder)
+    ve1 = pipeline.create(dai.node.VideoEncoder)
     ve2 = pipeline.create(dai.node.VideoEncoder)
     ve3 = pipeline.create(dai.node.VideoEncoder)
 
-    # ve1Out = pipeline.create(dai.node.XLinkOut)
+    ve1Out = pipeline.create(dai.node.XLinkOut)
     ve2Out = pipeline.create(dai.node.XLinkOut)
     ve3Out = pipeline.create(dai.node.XLinkOut)
 
-    # ve1Out.setStreamName(streamName[0])
+    ve1Out.setStreamName(streamName[0])
     ve2Out.setStreamName(streamName[1])
     ve3Out.setStreamName(streamName[2])
 
@@ -37,15 +37,15 @@ def getPipeLine(streamName):
     monoLeft.setBoardSocket(dai.CameraBoardSocket.LEFT)
     monoRight.setBoardSocket(dai.CameraBoardSocket.RIGHT)
     # Create encoders, one for each camera, consuming the frames and encoding them using H.264 / H.265 encoding
-    # ve1.setDefaultProfilePreset(30, dai.VideoEncoderProperties.Profile.H264_HIGH)
+    ve1.setDefaultProfilePreset(60, dai.VideoEncoderProperties.Profile.H264_HIGH)
     ve2.setDefaultProfilePreset(config['fps'], dai.VideoEncoderProperties.Profile.H264_HIGH)
     ve3.setDefaultProfilePreset(config['fps'], dai.VideoEncoderProperties.Profile.H264_HIGH)
 
     # Linking
     monoLeft.out.link(ve2.input)
-    # camRgb.video.link(ve1.input)
+    camRgb.video.link(ve1.input)
     monoRight.out.link(ve3.input)
-    # ve1.bitstream.link(ve1Out.input)
+    ve1.bitstream.link(ve1Out.input)
     ve2.bitstream.link(ve2Out.input)
     ve3.bitstream.link(ve3Out.input)
     return pipeline
@@ -80,9 +80,9 @@ def recordCam(mxID,path,streamName,camName,time_limit):
 #                         print("11"+str(outQ1.has()))
                         outQ1.get().getData().tofile(fileMono1H264)
 
-#                     while outQ2.has():
-# #                         print("21"+str(outQ2.has()))
-#                         outQ2.get().getData().tofile(fileColorH265)
+                    while outQ2.has():
+#                         print("21"+str(outQ2.has()))
+                        outQ2.get().getData().tofile(fileColorH265)
 
                     while outQ3.has():
 #                         print("31"+str(outQ3.has()))
