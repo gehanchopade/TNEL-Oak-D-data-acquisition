@@ -116,9 +116,9 @@ def recordCam(mxID,path,streamName,camName,time_limit):
 def recordVideo(path,streamName1,streamName2,config,currentRun,audio_path):
     ray.init()
     os.mkdir(path)
-    ray.get([recordCam.remote(mxID = '14442C10913365D300',path = path,streamName = streamName1,camName = 'cam1',time_limit = int(config['time_limit'])),
-             recordCam.remote(mxID = '14442C10810665D300',path = path,streamName = streamName2,camName = 'cam2',time_limit = int(config['time_limit'])),
-             playAudio.remote(audio_path)])
+    # ray.get([recordCam.remote(mxID = '14442C10913365D300',path = path,streamName = streamName1,camName = 'cam1',time_limit = int(config['time_limit'])),
+    #          recordCam.remote(mxID = '14442C10810665D300',path = path,streamName = streamName2,camName = 'cam2',time_limit = int(config['time_limit'])),
+    #          playAudio.remote(audio_path)])
     ray.shutdown()
     currentRun['timeEnd']=time.time()
     saveJson(currentRun,path+'/metadata.json')
@@ -143,6 +143,7 @@ if __name__=="__main__":
     
     config=getConfigData("config.json").get_record_config()
     audio_files_list=listdir(config['audio_path'])
+    session_id=input("Enter Session ID: ")
     try:
         while len(audio_files_list)>0:
             lastRunMetaPath='./lastRunMeta.json'
@@ -152,7 +153,7 @@ if __name__=="__main__":
             streamName2=['ve1Out1','ve2Out1','ve3Out1']
             month,day,year=time.localtime().tm_mon,time.localtime().tm_mday,time.localtime().tm_year
             hour,minutes,seconds=time.localtime().tm_hour,time.localtime().tm_min,time.localtime().tm_sec
-            dir_name=str(month)+'_'+str(day)+'_'+str(year)+'_'+str(hour)+str(minutes)
+            dir_name=str(month)+'_'+str(day)+'_'+str(year)+'_'+str(hour)+str(minutes)+'_'+session_id
             path=config['data_path']+'/'+dir_name
             lastRunTime=getLastRunTime(lastRun)
             randomFlag=random.randint(0,100)%7==0
