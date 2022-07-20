@@ -21,38 +21,35 @@ def getPipeLine(streamName):
     pipeline = dai.Pipeline()
     config=getConfigData("config.json").get_record_config()
     # Define sources and outputs
-    camRgb = pipeline.create(dai.node.ColorCamera)
+    # camRgb = pipeline.create(dai.node.ColorCamera)
     monoLeft = pipeline.create(dai.node.MonoCamera)
     monoRight = pipeline.create(dai.node.MonoCamera)
-    ve1 = pipeline.create(dai.node.VideoEncoder)
+    # ve1 = pipeline.create(dai.node.VideoEncoder)
     ve2 = pipeline.create(dai.node.VideoEncoder)
     ve3 = pipeline.create(dai.node.VideoEncoder)
 
-    ve1Out = pipeline.create(dai.node.XLinkOut)
+    # ve1Out = pipeline.create(dai.node.XLinkOut)
     ve2Out = pipeline.create(dai.node.XLinkOut)
     ve3Out = pipeline.create(dai.node.XLinkOut)
 
-    ve1Out.setStreamName(streamName[0])
+    # ve1Out.setStreamName(streamName[0])
     ve2Out.setStreamName(streamName[1])
     ve3Out.setStreamName(streamName[2])
 
     # Properties
-    camRgb.setBoardSocket(dai.CameraBoardSocket.RGB)
+    # camRgb.setBoardSocket(dai.CameraBoardSocket.RGB)
     monoLeft.setBoardSocket(dai.CameraBoardSocket.LEFT)
     monoRight.setBoardSocket(dai.CameraBoardSocket.RIGHT)
     # Create encoders, one for each camera, consuming the frames and encoding them using H.264 / H.265 encoding
-    color_fps=60
-    if(config['fps']<60):
-        color_fps=config['fps']
-    ve1.setDefaultProfilePreset(30, dai.VideoEncoderProperties.Profile.H264_HIGH)
+    # ve1.setDefaultProfilePreset(30, dai.VideoEncoderProperties.Profile.H264_HIGH)
     ve2.setDefaultProfilePreset(config['fps'], dai.VideoEncoderProperties.Profile.H264_HIGH)
     ve3.setDefaultProfilePreset(config['fps'], dai.VideoEncoderProperties.Profile.H264_HIGH)
 
     # Linking
     monoLeft.out.link(ve2.input)
-    camRgb.video.link(ve1.input)
+    # camRgb.video.link(ve1.input)
     monoRight.out.link(ve3.input)
-    ve1.bitstream.link(ve1Out.input)
+    # ve1.bitstream.link(ve1Out.input)
     ve2.bitstream.link(ve2Out.input)
     ve3.bitstream.link(ve3Out.input)
     return pipeline
@@ -64,9 +61,9 @@ def recordCam(mxID,path,streamName,camName,time_limit):
     with dai.Device(pipeline,deviceInfo) as dev:
 
         # Output queues will be used to get the encoded data from the outputs defined above
-        outQ_mono_1 = dev.getOutputQueue(name=streamName[1], maxSize=30, blocking=False)
-        outQ_color = dev.getOutputQueue(name=streamName[0], maxSize=30, blocking=False)
-        outQ_mono_2 = dev.getOutputQueue(name=streamName[2], maxSize=30, blocking=False)
+        outQ1 = dev.getOutputQueue(name=streamName[1], maxSize=30, blocking=False)
+        # outQ2 = dev.getOutputQueue(name=streamName[1], maxSize=30, blocking=False)
+        outQ3 = dev.getOutputQueue(name=streamName[2], maxSize=30, blocking=False)
         os.mkdir(path+'/'+camName)
         os.mkdir(path+'/'+camName+'/videos/')
         os.mkdir(path+'/'+camName+'/frames/')
@@ -78,23 +75,23 @@ def recordCam(mxID,path,streamName,camName,time_limit):
         print("RECORDING for"+ camName + " started at "+str(int(time.time())) + " seconds.")
         with open(f_mono1, 'wb') as fileMono1H264, open(f_color, 'wb') as fileColorH265, open(f_mono2, 'wb') as fileMono2H264:
 #             print("Press Ctrl+C or interrupt kernel to stop encoding...")
-            
+
             while (time.time()-start<time_limit+2):
 #                 print(time.time()-start)
                 try:
                     # Empty each queue
-                    while outQ_mono_1.has():
+                    while outQ1.has():
 #                         print("11"+str(outQ1.has()))
-                        outQ_mono_1.get().getData().tofile(fileMono1H264)
+                        outQ1.get().getData().tofile(fileMono1H264)
 
-                    while outQ_color.has():
-#                         print("21"+str(outQ2.has()))
-                        outQ_color.get().getData().tofile(fileColorH265)
+#                     while outQ2.has():
+# #                         print("21"+str(outQ2.has()))
+#                         outQ2.get().getData().tofile(fileColorH265)
 
-                    while outQ_mono_2.has():
+                    while outQ3.has():
 #                         print("31"+str(outQ3.has()))
-                        outQ_mono_2.get().getData().tofile(fileMono2H264)
-    
+                        outQ3.get().getData().tofile(fileMono2H264)
+
                 except KeyboardInterrupt:
                     # Keyboard interrupt (Ctrl + C) detected
                     break
@@ -110,15 +107,14 @@ def recordCam(mxID,path,streamName,camName,time_limit):
         os.remove(f_mono1)
         os.remove(f_mono2)
         os.remove(f_color)
-        
-    print("RECORDING for "+ camName + " ended at "+str(int(time.time())) + " seconds.")
 
+        print("RECORDING for "+ camName + " ended at "+str(int(time.time())) + " seconds.")
 def recordVideo(path,streamName1,streamName2,config,currentRun,audio_path):
     ray.init()
     os.mkdir(path)
-    # ray.get([recordCam.remote(mxID = '14442C10913365D300',path = path,streamName = streamName1,camName = 'cam1',time_limit = int(config['time_limit'])),
-    #          recordCam.remote(mxID = '14442C10810665D300',path = path,streamName = streamName2,camName = 'cam2',time_limit = int(config['time_limit'])),
-    #          playAudio.remote(audio_path)])
+    ray.get([recordCam.remote(mxID = '14442C10913365D300',path = path,streamName = streamName1,camName = 'cam1',time_limit = int(config['time_limit'])),
+             recordCam.remote(mxID = '14442C10810665D300',path = path,streamName = streamName2,camName = 'cam2',time_limit = int(config['time_limit'])),
+             playAudio.remote(audio_path)])
     ray.shutdown()
     currentRun['timeEnd']=time.time()
     saveJson(currentRun,path+'/metadata.json')
@@ -143,7 +139,7 @@ if __name__=="__main__":
     
     config=getConfigData("config.json").get_record_config()
     audio_files_list=listdir(config['audio_path'])
-    session_id=input("Enter Session ID: ")
+    session_id=config['session_id']
     try:
         while len(audio_files_list)>0:
             lastRunMetaPath='./lastRunMeta.json'

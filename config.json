@@ -1,5 +1,6 @@
 {
     "record": {
+        "session_id": "test_session",
         "data_path": "./data",
         "video_encoder_prop": "H264_HIGH",
         "fps": 120,
